@@ -15,18 +15,18 @@ namespace BackupClient
             
             var backup = (BackupJob)context.JobDetail.JobDataMap["backup"];
 
-            int counter = 0;
             string time = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             foreach (string source in backup.Sources)
             {
                 
                 foreach (string target in backup.Targets)
                 {
-                    Directory.CreateDirectory(target + "\\Full_" + counter + "_" + time);
-                    counter++;
+                    Directory.CreateDirectory(target + "\\Full_" + time);
                 }
             }
-
+            Console.Clear();
+            Console.WriteLine("Full backup done succesfully");
+            Thread.Sleep(2000);
             await context.Scheduler.DeleteJob(context.JobDetail.Key);
         }
     }

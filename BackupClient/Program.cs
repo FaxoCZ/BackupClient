@@ -35,7 +35,7 @@ namespace BackupClient
                     Directory.CreateDirectory(target);
                 }
             }
-            int methodCounter = 0;
+            int methodCounter = 2;
         while (true)
         {
                 foreach (var job in backupJobs)
@@ -56,7 +56,7 @@ namespace BackupClient
                         if (job.Method == BackupMethod.incremental)
                     {
                         methodCounter++;
-                        //IncrementalBackup(job);
+                        IncrementalBackup(job);
                     }
                 }
             }
@@ -86,6 +86,35 @@ namespace BackupClient
             var nextTime = cronExp.GetNextValidTimeAfter(DateTimeOffset.Now);
 
             Console.WriteLine("Next job: Full");
+            Console.WriteLine($"Scheduled at: {nextTime?.LocalDateTime}");
+
+            Task.Delay(-1).Wait();
+        }
+        public static void IncrementalBackup(BackupJob backup)
+        {
+            StdSchedulerFactory factory = new StdSchedulerFactory();
+            IScheduler scheduler = factory.GetScheduler().Result;
+
+            scheduler.Start().Wait();
+
+            IJobDetail job = JobBuilder
+                .Create<IncrementalQuartzJob>()
+                .Build();
+
+            job.JobDataMap["backup"] = backup;
+
+            ITrigger trigger = TriggerBuilder
+                .Create()
+                .WithCronSchedule("0 " + backup.Timing)
+                .StartNow()
+                .Build();
+
+            scheduler.ScheduleJob(job, trigger).Wait();
+
+            var cronExp = new CronExpression("0 " + backup.Timing);
+            var nextTime = cronExp.GetNextValidTimeAfter(DateTimeOffset.Now);
+
+            Console.WriteLine("Next job: Incremental");
             Console.WriteLine($"Scheduled at: {nextTime?.LocalDateTime}");
 
             Task.Delay(-1).Wait();
