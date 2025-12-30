@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using Quartz;
+using Quartz.Impl;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using static Quartz.Logging.OperationName;
 
@@ -12,6 +14,8 @@ namespace BackupClient
         }
         public static void Backup()
         {
+
+
             string dataPath = @"C:\Users\faxou\Desktop\BackupProject\BackupClient\config.json";
 
             string JSONcontent = File.ReadAllText(dataPath);
@@ -26,21 +30,65 @@ namespace BackupClient
 
             foreach (BackupJob job in backupJobs)
             {
-                Console.WriteLine(string.Join(", ", job.Sources));
-                Console.WriteLine(string.Join(", ", job.Targets));
-                Console.WriteLine(job.Timing);
-                Console.WriteLine(job.Retention);
-                Console.WriteLine(job.Method);
-
-            }
-            foreach (BackupJob job in backupJobs)
-            {
                 foreach (string target in job.Targets)
                 {
                     Directory.CreateDirectory(target);
                 }
-            } 
-                       
-        } 
+            }
+            int methodCounter = 0;
+        while (true)
+        {
+                foreach (var job in backupJobs)
+                {
+                    if (methodCounter == 4)
+                    {
+                        methodCounter = 0;
+                    }
+                    if (methodCounter == 0)
+                    {
+                        if (job.Method == BackupMethod.full)
+                        {
+                            methodCounter++;
+                            FullBackup(job);
+                        }
+                    }
+                    else
+                        if (job.Method == BackupMethod.incremental)
+                    {
+                        methodCounter++;
+                        //IncrementalBackup(job);
+                    }
+                }
+            }
+        }
+        public static void FullBackup(BackupJob backup)
+        {
+            StdSchedulerFactory factory = new StdSchedulerFactory();
+            IScheduler scheduler = factory.GetScheduler().Result;
+
+            scheduler.Start().Wait();
+
+            IJobDetail job = JobBuilder
+                .Create<FullQuartzJob>()
+                .Build();
+
+            job.JobDataMap["backup"] = backup;
+
+            ITrigger trigger = TriggerBuilder
+                .Create()
+                .WithCronSchedule("0 " + backup.Timing)
+                .StartNow()
+                .Build();
+
+            scheduler.ScheduleJob(job, trigger).Wait();
+
+            var cronExp = new CronExpression("0 " + backup.Timing);
+            var nextTime = cronExp.GetNextValidTimeAfter(DateTimeOffset.Now);
+
+            Console.WriteLine("Next job: Full");
+            Console.WriteLine($"Scheduled at: {nextTime?.LocalDateTime}");
+
+            Task.Delay(-1).Wait();
+        }
     }
 }
