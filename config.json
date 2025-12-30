@@ -1,0 +1,32 @@
+[
+ {
+ 	"sources": [
+		"C:\\Users\\faxou\\test"
+		"C:\\Users\\faxou\\test2"
+ 	],
+ 	"targets": [
+ 		"C:\\Users\\faxou\\Desktop"
+ 	],
+	"method": "full",
+ 	"timing": "30 12 * * *",
+ 	"retention": {
+ 		"count": 5,
+ 		"size": 1
+ 	}
+ },
+ {
+ 	"sources": [
+		"C:\\Users\\faxou\\test"
+		"C:\\Users\\faxou\\test2"
+ 	],
+ 	"targets": [
+ 		"C:\\Users\\faxou\\Desktop"
+ 	],
+	"method": "incremental",
+ 	"timing": "0 * * * *",
+ 	"retention": {
+ 		"count": 3,
+ 		"size": 3
+ 	}
+ }
+]
