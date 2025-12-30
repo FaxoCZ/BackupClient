@@ -1,11 +1,11 @@
 [
  {
  	"sources": [
-		"C:\\Users\\faxou\\test"
+		"C:\\Users\\faxou\\test",
 		"C:\\Users\\faxou\\test2"
  	],
  	"targets": [
- 		"C:\\Users\\faxou\\Desktop"
+ 		"C:\\Users\\faxou\\Desktop\\Backup"
  	],
 	"method": "full",
  	"timing": "30 12 * * *",
@@ -16,11 +16,11 @@
  },
  {
  	"sources": [
-		"C:\\Users\\faxou\\test"
+		"C:\\Users\\faxou\\test",
 		"C:\\Users\\faxou\\test2"
  	],
  	"targets": [
- 		"C:\\Users\\faxou\\Desktop"
+ 		"C:\\Users\\faxou\\Desktop\\Backup"
  	],
 	"method": "incremental",
  	"timing": "0 * * * *",

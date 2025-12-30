@@ -11,16 +11,9 @@ namespace BackupClient
         public List<string> Sources { get; set; }
         public List<string> Targets { get; set; }
         public string Timing { get; set; }
-        public BackupRetention retention { get; set; }
+        public BackupRetention Retention { get; set; }
         public BackupMethod Method { get; set; }
 
-        public BackupJob(List<string> sources, List<string> targets, string timing, BackupRetention retention, BackupMethod method)
-        {
-            Sources = sources;
-            Targets = targets;
-            Timing = timing;
-            this.retention = retention;
-            Method = method;
-        }
+        public BackupJob() { }
     }
 }

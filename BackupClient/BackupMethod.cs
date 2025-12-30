@@ -8,8 +8,8 @@ namespace BackupClient
 {
     public enum BackupMethod
     {
-        Full = 1,
-        Incremental = 2,
-        Differential = 3
+        full = 1,
+        incremental = 2,
+        differential = 3
     }
 }
