@@ -14,9 +14,8 @@ namespace BackupClient
         }
         public static void Backup()
         {
-
-
-            string dataPath = @"C:\Users\faxou\Desktop\BackupProject\BackupClient\config.json";
+            string dataPath = GetJsonPath();
+            Console.Clear();
 
             string JSONcontent = File.ReadAllText(dataPath);
 
@@ -36,11 +35,25 @@ namespace BackupClient
                 }
             }
             int methodCounter = 2;
-        while (true)
-        {
+            int fullRetentionCounter = 0;
+            int incrementalRetentionCounter = 0;
+            while (true)
+            {
+                if(fullRetentionCounter == backupJobs[0].Retention.Count)
+                {
+                    fullRetentionCounter = 0;
+                    FullRetention(backupJobs[0]);
+                }
+                if (incrementalRetentionCounter == backupJobs[1].Retention.Count)
+                {
+                    incrementalRetentionCounter = 0;
+                    IncrementalRetention(backupJobs[1]);
+
+                }
+
                 foreach (var job in backupJobs)
                 {
-                    if (methodCounter == 4)
+                    if (methodCounter == job.Retention.Size + 1)
                     {
                         methodCounter = 0;
                     }
@@ -49,6 +62,7 @@ namespace BackupClient
                         if (job.Method == BackupMethod.full)
                         {
                             methodCounter++;
+                            fullRetentionCounter++;
                             FullBackup(job);
                         }
                     }
@@ -56,10 +70,36 @@ namespace BackupClient
                         if (job.Method == BackupMethod.incremental)
                     {
                         methodCounter++;
-                        IncrementalBackup(job);
+                        incrementalRetentionCounter++;
+                        IncrementalBackup(job);                    
                     }
                 }
             }
+        }
+        public static string GetJsonPath()
+        {
+            string? parentDir = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetCurrentDirectory())?.FullName).FullName).FullName).FullName + "\\JSONConfigs";
+
+
+            var jsonFiles = Directory.GetFiles(parentDir, "*.json");
+
+            if (jsonFiles.Length == 0)
+            {
+                Console.WriteLine("No JSON file found, write path: ");
+                return Console.ReadLine()!;
+            }
+
+            Console.WriteLine("JSON files found:");
+            foreach (string file in jsonFiles)
+            {
+                Console.WriteLine(Path.GetFileName(file));
+            }
+
+            Console.Write("\nChoose file: ");
+            string? fileSel = Console.ReadLine();
+            
+            return parentDir + "\\" + fileSel;
+
         }
         public static void FullBackup(BackupJob backup)
         {
@@ -118,6 +158,32 @@ namespace BackupClient
             Console.WriteLine($"Scheduled at: {nextTime?.LocalDateTime}");
 
             Task.Delay(-1).Wait();
+        }
+        public static void FullRetention(BackupJob backup)
+        {
+
+            foreach (string target in backup.Targets)
+            {
+                var directories = new DirectoryInfo(target).GetDirectories("Full_*")
+                    .OrderByDescending(d => d.CreationTime).ToList();
+                
+                    directories[0].Delete(true);
+                    directories.RemoveAt(0);               
+            }
+        }
+        public static void IncrementalRetention(BackupJob backup)
+        {
+            foreach (string target in backup.Targets)
+            {
+                var directories = new DirectoryInfo(target).GetDirectories("Incremental_*")
+                    .OrderByDescending(d => d.CreationTime).ToList();
+
+                for (int i = 0; i < backup.Retention.Size; i++)
+                {
+                    directories[0].Delete(true);
+                    directories.RemoveAt(0);
+                }
+            }
         }
     }
 }
