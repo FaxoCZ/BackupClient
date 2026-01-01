@@ -34,22 +34,30 @@ namespace BackupClient
                     Directory.CreateDirectory(target);
                 }
             }
-            int methodCounter = 2;
+            int methodCounter = 0;
             int fullRetentionCounter = 0;
             int incrementalRetentionCounter = 0;
             while (true)
             {
-                if(fullRetentionCounter == backupJobs[0].Retention.Count)
+                foreach (var job in backupJobs)
                 {
-                    fullRetentionCounter = 0;
-                    FullRetention(backupJobs[0]);
-                }
-                if (incrementalRetentionCounter == backupJobs[1].Retention.Count)
-                {
-                    incrementalRetentionCounter = 0;
-                    IncrementalRetention(backupJobs[1]);
+                    if (fullRetentionCounter == backupJobs[0].Retention.Count && BackupMethod.full == job.Method)
+                    {
+                        fullRetentionCounter = 0;
+                        FullRetention(backupJobs[0]);
+                    }
+                    if(backupJobs.Count > 1)
+                    {
+                        if (incrementalRetentionCounter == backupJobs[1].Retention.Count)
+                        {
+                            incrementalRetentionCounter = 0;
+                            IncrementalRetention(backupJobs[1]);
 
+                        }
+                    }
+                    
                 }
+                
 
                 foreach (var job in backupJobs)
                 {

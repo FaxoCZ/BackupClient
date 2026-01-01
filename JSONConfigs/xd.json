@@ -1,0 +1,17 @@
+[
+ {
+ 	"sources": [
+		"C:\\Users\\faxou\\test",
+		"C:\\Users\\faxou\\test2"
+ 	],
+ 	"targets": [
+ 		"C:\\Users\\faxou\\Desktop\\Backup"
+ 	],
+	"method": "full",
+ 	"timing": "30 12 * * ?",
+ 	"retention": {
+ 		"count": 5,
+ 		"size": 1
+ 	}
+ }
+]
