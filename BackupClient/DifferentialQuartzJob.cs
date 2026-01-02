@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace BackupClient
 {
-    internal class IncrementalQuartzJob : IJob
+    internal class DifferentialQuartzJob : IJob
     {
         public async Task Execute(IJobExecutionContext context)
         {
@@ -16,16 +16,16 @@ namespace BackupClient
 
             string time = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
 
-            Directory.CreateDirectory(backup.Targets + "\\Incremental_" + time);
+            Directory.CreateDirectory(backup.Targets + "\\Differential_" + time);
 
             List<string> sourceDir = backup.Sources;
             string fullBackupDir = backup.Targets[0] + "\\Full";
-            string incrementalDir = backup.Targets + "\\Incremental_" + time;
+            string differentialDir = backup.Targets + "\\Differential_" + time;
 
             foreach (string sourceDirs in sourceDir)
             {
                 string sourceRootName = new DirectoryInfo(sourceDirs).Name;
-                bool Copy = false;
+
                 foreach (string sourceFile in Directory.GetFiles(
                              sourceDirs, "*", SearchOption.AllDirectories))
                 {
@@ -35,7 +35,9 @@ namespace BackupClient
                         fullBackupDir, sourceRootName, relativePath);
 
                     string incFile = Path.Combine(
-                        incrementalDir, sourceRootName, relativePath);                  
+                        differentialDir, sourceRootName, relativePath);
+
+                    bool Copy = false;
 
                     if (!File.Exists(fullFile))
                     {
@@ -49,25 +51,6 @@ namespace BackupClient
                         if (sourceTime > fullTime)
                             Copy = true;
                     }
-                    foreach (string targetFile in Directory.GetFiles(
-                             incrementalDir, "*", SearchOption.AllDirectories))
-                    {
-                        var directories = new DirectoryInfo(backup.Targets[1]).GetDirectories("Incremental_*")
-                        .OrderBy(d => d.CreationTime).ToList();
-
-                        if (!File.Exists(directories[1].ToString()))
-                        {
-                            Copy = false;
-                        }
-                        else
-                        {
-                            DateTime sourceTime = File.GetLastWriteTime(sourceFile);
-                            DateTime fullTime = File.GetLastWriteTime(directories[1].ToString());
-
-                            if (sourceTime > fullTime)
-                                Copy = true;
-                        }                      
-                    }
 
                     if (Copy)
                     {
@@ -75,10 +58,9 @@ namespace BackupClient
                         File.Copy(sourceFile, incFile, true);
                     }
                 }
-
             }
             Console.Clear();
-            Console.WriteLine("Incremental backup done succesfully");
+            Console.WriteLine("Differential backup done succesfully");
             Thread.Sleep(2000);
             await context.Scheduler.DeleteJob(context.JobDetail.Key);
         }

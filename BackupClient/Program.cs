@@ -34,9 +34,10 @@ namespace BackupClient
                     Directory.CreateDirectory(target);
                 }
             }
-            int methodCounter = 0;
+            int methodCounter = 1;
             int fullRetentionCounter = 0;
             int incrementalRetentionCounter = 0;
+            int differentialRetentionCounter = 0;
             while (true)
             {
                 foreach (var job in backupJobs)
@@ -55,31 +56,40 @@ namespace BackupClient
 
                         }
                     }
-                    
+                    if(backupJobs.Count > 2)
+                    {
+                        if (differentialRetentionCounter == backupJobs[2].Retention.Count)
+                        {
+                            differentialRetentionCounter = 0;
+                            DifferentialRetention(backupJobs[2]);
+                        }
+                    }
+
                 }
                 
 
                 foreach (var job in backupJobs)
-                {
-                    if (methodCounter == job.Retention.Size + 1)
+                {                                       
+                    if (job.Method == BackupMethod.full && methodCounter == 0)
                     {
-                        methodCounter = 0;
+                        methodCounter++;
+                        fullRetentionCounter++;
+                        FullBackup(job);
                     }
-                    if (methodCounter == 0)
-                    {
-                        if (job.Method == BackupMethod.full)
-                        {
-                            methodCounter++;
-                            fullRetentionCounter++;
-                            FullBackup(job);
-                        }
-                    }
+                    
                     else
-                        if (job.Method == BackupMethod.incremental)
+                        if (job.Method == BackupMethod.incremental && methodCounter > 1 && methodCounter < job.Retention.Count)
                     {
                         methodCounter++;
                         incrementalRetentionCounter++;
-                        IncrementalBackup(job);                    
+                        IncrementalBackup(job);                       
+                    }
+                    else
+                        if (job.Method == BackupMethod.differential)
+                    {
+                        methodCounter = 0;
+                        differentialRetentionCounter++;
+                        DifferentialBackup(job);
                     }
                 }
             }
@@ -167,6 +177,35 @@ namespace BackupClient
 
             Task.Delay(-1).Wait();
         }
+        public static void DifferentialBackup(BackupJob backup)
+        {
+            StdSchedulerFactory factory = new StdSchedulerFactory();
+            IScheduler scheduler = factory.GetScheduler().Result;
+
+            scheduler.Start().Wait();
+
+            IJobDetail job = JobBuilder
+                .Create<DifferentialQuartzJob>()
+                .Build();
+
+            job.JobDataMap["backup"] = backup;
+
+            ITrigger trigger = TriggerBuilder
+                .Create()
+                .WithCronSchedule("0 " + backup.Timing)
+                .StartNow()
+                .Build();
+
+            scheduler.ScheduleJob(job, trigger).Wait();
+
+            var cronExp = new CronExpression("0 " + backup.Timing);
+            var nextTime = cronExp.GetNextValidTimeAfter(DateTimeOffset.Now);
+
+            Console.WriteLine("Next job: Differential");
+            Console.WriteLine($"Scheduled at: {nextTime?.LocalDateTime}");
+
+            Task.Delay(-1).Wait();
+        }
         public static void FullRetention(BackupJob backup)
         {
 
@@ -184,6 +223,20 @@ namespace BackupClient
             foreach (string target in backup.Targets)
             {
                 var directories = new DirectoryInfo(target).GetDirectories("Incremental_*")
+                    .OrderByDescending(d => d.CreationTime).ToList();
+
+                for (int i = 0; i < backup.Retention.Size; i++)
+                {
+                    directories[0].Delete(true);
+                    directories.RemoveAt(0);
+                }
+            }
+        }
+        public static void DifferentialRetention(BackupJob backup)
+        {
+            foreach (string target in backup.Targets)
+            {
+                var directories = new DirectoryInfo(target).GetDirectories("Differential_*")
                     .OrderByDescending(d => d.CreationTime).ToList();
 
                 for (int i = 0; i < backup.Retention.Size; i++)
